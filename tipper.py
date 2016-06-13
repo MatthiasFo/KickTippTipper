@@ -7,7 +7,7 @@ import robobrowser
 from bs4 import BeautifulSoup
 import math
 
-url_login = "http://www.kicktipp.de/info/profil/login"
+url_login = "https://www.kicktipp.de/info/profil/login"
 
 #Possible Results, modify at will
 deuce = [1,1]
@@ -107,9 +107,9 @@ def grab_beturl():
     """Searches for the bet-url"""
     for i in browser.find_all("a"):
         link = i.get("href")
-        name = i.contents[0]
+        name = i.contents
         link = link.replace("/","")
-        if link == name:
+        if link in name :
             return link
             break
 
