@@ -75,40 +75,37 @@ def grab_odds(bet_urls):
     return gameday
 
 
-def calc_results(odds):
+def calc_results(gameday):
     """By considering odds, calculates match results"""
     print("Calculating Results")
     results = []
 
-    for site in odds:
-        sresults = []
-        for i in site:
-            diff = math.fabs(i[0] - i[2])
-            if diff < 1.0:
-                sresults.append(deuce)
-            elif diff > 8.0:
-                if i[0] > i[1]:
-                    sresults.append(team2_greatwin)
-                else:
-                    sresults.append(team1_greatwin)
+    for key in gameday:
+        game_odds = gameday[key]['odds']
+        diff = math.fabs(game_odds[0] - game_odds[2])
+        if diff < 1.0:
+            results.append(deuce)
+        elif diff > 8.0:
+            if game_odds[0] > game_odds[2]:
+                results.append(team2_greatwin)
             else:
-                if i[0] > i[1]:
-                    sresults.append(team2_win)
-                else:
-                    sresults.append(team1_win)
-        results.append(sresults)
+                results.append(team1_greatwin)
+        else:
+            if game_odds[0] > game_odds[2]:
+                results.append(team2_win)
+            else:
+                results.append(team1_win)
     return results
 
 
-def get_keys():
-    """Get necessary input keys"""
+def get_keys(bet_urls):
     ret = []
     for url in bet_urls:
         print("Getting input keys for " + url)
         formkeys = []
         browser.open(url)
 
-        for i in browser.find_all("input", type="tel"):
+        for i in browser.find_all("input", inputmode="tel"):
             formkeys.append(i.get("name"))
         formkeys = [formkeys[i:i + 2] for i in range(0, len(formkeys), 2)]
         ret.append(formkeys)
@@ -127,10 +124,21 @@ def pass_results(bet_urls, results):
             to_delete = len(results[idx]) - len(formkeys)
             results[idx] = results[idx][to_delete:]
 
-        for i in range(0, len(formkeys)):
-            form[formkeys[idx][i][0]] = results[idx][i][0]
-            form[formkeys[idx][i][1]] = results[idx][i][1]
+        for i in range(0, len(formkeys[idx])):
+            form[formkeys[idx][i][0]] = results[idx][0]
+            form[formkeys[idx][i][1]] = results[idx][1]
         browser.submit_form(form)
+
+
+def grab_kicktipp_groups():
+    group_names = []
+    for i in browser.find_all("a"):
+        link = i.get("href").split("?")[0]
+        name = i.contents
+        link = link.replace("/", "")
+        if link in name:
+            group_names.append(link)
+    return group_names
 
 
 def grab_kicktipp_groups():
@@ -147,16 +155,16 @@ def grab_kicktipp_groups():
 def set_bet_urls(links):
     bet_urls = []
     for l in links:
-        url_betting.append("https://www.kicktipp.de/" + l + "/tippabgabe")
-        url_betting_mobile.append("https://m.kicktipp.de/" + l + "/tippabgabe")
+        bet_urls.append("https://www.kicktipp.de/" + l + "/tippabgabe")
+    return bet_urls
 
 
 
 if __name__ == '__main__':
     browser = RoboBrowser(parser="html.parser", history=True)
     login()
-    set_bet_urls(grab_beturl())
-    my_odds = grab_odds()
+    betting_url = set_bet_urls(grab_kicktipp_groups())
+    my_odds = grab_odds(betting_url)
     my_results = calc_results(my_odds)
-    pass_results(url_betting, my_results)
+    pass_results(betting_url, my_results)
     print("Done!")
