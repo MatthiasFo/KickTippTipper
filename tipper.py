@@ -12,7 +12,6 @@ from robobrowser import RoboBrowser
 werkzeug.cached_property = werkzeug.utils.cached_property
 
 url_login = "https://www.kicktipp.de/info/profil/login"
-# url_login_mobile = "https://m.kicktipp.de/info/profil/login"
 
 # Possible Results, modify at will
 deuce = [1, 1]
@@ -47,20 +46,33 @@ def did_login_work():
     return True
 
 
-def grab_odds():
-    """Grabs latest odds for each match"""
-    ret = []
-    for url in url_betting:
+def grab_odds(bet_urls):
+    if isinstance(bet_urls, str):
+        bet_urls = [bet_urls]
+    for url in bet_urls:
         print("Grabbing ods for " + url)
         odds = []
+        matchup = []
+        gameday = {}
         browser.open(url)
-
-        for i in browser.find_all("td", class_="kicktipp-wettquote"):
-            quote = float(i.get_text())
-            odds.append(quote)
-        odds = [odds[i:i + 3] for i in range(0, len(odds), 3)]
-        ret.append(odds)
-    return ret
+        for i in browser.find_all("td"):
+            attributes = i.attrs
+            if 'kicktipp-time' in attributes['class']:
+                if len(matchup) > 0:
+                    gameday[str(matchup)] = {'odds': odds, 'teams': matchup}
+                    matchup = []
+                    odds = []
+                continue
+            elif 'kicktipp-wettquote' in attributes['class']:
+                quote = float(i.get_text())
+                odds.append(quote)
+            elif "kicktipp-tippabgabe" in attributes['class']:
+                matchup
+            else:
+                team = i.get_text()
+                matchup.append(team)
+        gameday[str(matchup)] = {'odds': odds, 'teams': matchup}
+    return gameday
 
 
 def calc_results(odds):
@@ -91,7 +103,7 @@ def calc_results(odds):
 def get_keys():
     """Get necessary input keys"""
     ret = []
-    for url in url_betting_mobile:
+    for url in bet_urls:
         print("Getting input keys for " + url)
         formkeys = []
         browser.open(url)
@@ -103,11 +115,10 @@ def get_keys():
     return ret
 
 
-def pass_results(results):
-    """Submit calculated results and save them"""
-    for idx, url in enumerate(url_betting_mobile):
+def pass_results(bet_urls, results):
+    for idx, url in enumerate(bet_urls):
         print("Passing Results to " + url)
-        formkeys = get_keys()
+        formkeys = get_keys(bet_urls)
         browser.open(url)
         form = browser.get_form()
 
@@ -122,27 +133,23 @@ def pass_results(results):
         browser.submit_form(form)
 
 
-def grab_beturl():
-    """Searches for the bet-urls"""
-    ret = []
+def grab_kicktipp_groups():
+    group_names = []
     for i in browser.find_all("a"):
         link = i.get("href").split("?")[0]
         name = i.contents
         link = link.replace("/", "")
         if link in name:
-            ret.append(link)
-    return ret
+            group_names.append(link)
+    return group_names
 
 
 def set_bet_urls(links):
-    """Sets bet-urls"""
-    global url_betting
-    global url_betting_mobile
-    url_betting = []
-    url_betting_mobile = []
+    bet_urls = []
     for l in links:
         url_betting.append("https://www.kicktipp.de/" + l + "/tippabgabe")
         url_betting_mobile.append("https://m.kicktipp.de/" + l + "/tippabgabe")
+
 
 
 if __name__ == '__main__':
@@ -151,5 +158,5 @@ if __name__ == '__main__':
     set_bet_urls(grab_beturl())
     my_odds = grab_odds()
     my_results = calc_results(my_odds)
-    pass_results(my_results)
+    pass_results(url_betting, my_results)
     print("Done!")
