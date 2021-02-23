@@ -21,32 +21,32 @@ team1_greatwin = [3, 1]
 team2_greatwin = [1, 3]
 
 
-def login():
+def login(robo_browser):
     """Logs into useraccount"""
     with open('credentials.json') as json_file:
         credentials = json.load(json_file)
     username = credentials['username']
     password = credentials['password']
-    browser.open(url_login)
-    form = browser.get_form()
+    robo_browser.open(url_login)
+    form = robo_browser.get_form()
     form['kennung'] = username
     form['passwort'] = password
-    browser.submit_form(form)
+    robo_browser.submit_form(form)
 
-    if not did_login_work():
+    if not did_login_work(robo_browser):
         print("Your email or password was incorrect. Please try again.")
         print("")
 
 
-def did_login_work():
+def did_login_work(robo_browser):
     """Returns true if function does not find any input possibility"""
-    for i in browser.find_all("input", type="text"):
+    for i in robo_browser.find_all("input", type="text"):
         if i.get("name") == "kennung":
             return False
     return True
 
 
-def grab_odds(bet_urls):
+def grab_odds(robo_browser, bet_urls):
     if isinstance(bet_urls, str):
         bet_urls = [bet_urls]
     for url in bet_urls:
@@ -54,8 +54,8 @@ def grab_odds(bet_urls):
         odds = []
         matchup = []
         gameday = {}
-        browser.open(url)
-        for i in browser.find_all("td"):
+        robo_browser.open(url)
+        for i in robo_browser.find_all("td"):
             attributes = i.attrs
             if 'kicktipp-time' in attributes['class']:
                 if len(matchup) > 0:
@@ -98,26 +98,26 @@ def calc_results(gameday):
     return results
 
 
-def get_keys(bet_urls):
+def get_keys(robo_browser, bet_urls):
     ret = []
     for url in bet_urls:
         print("Getting input keys for " + url)
         formkeys = []
-        browser.open(url)
+        robo_browser.open(url)
 
-        for i in browser.find_all("input", inputmode="tel"):
+        for i in robo_browser.find_all("input", inputmode="tel"):
             formkeys.append(i.get("name"))
         formkeys = [formkeys[i:i + 2] for i in range(0, len(formkeys), 2)]
         ret.append(formkeys)
     return ret
 
 
-def pass_results(bet_urls, results):
+def pass_results(robo_browser, bet_urls, results):
     for idx, url in enumerate(bet_urls):
         print("Passing Results to " + url)
-        formkeys = get_keys(bet_urls)
-        browser.open(url)
-        form = browser.get_form()
+        formkeys = get_keys(robo_browser, bet_urls)
+        robo_browser.open(url)
+        form = robo_browser.get_form()
 
         # If some matches already have been played the results list needs to be adjusted
         if len(formkeys) != len(results):
@@ -127,12 +127,12 @@ def pass_results(bet_urls, results):
         for i in range(0, len(formkeys[idx])):
             form[formkeys[idx][i][0]] = results[idx][0]
             form[formkeys[idx][i][1]] = results[idx][1]
-        browser.submit_form(form)
+        robo_browser.submit_form(form)
 
 
-def grab_kicktipp_groups():
+def grab_kicktipp_groups(robo_browser):
     group_names = []
-    for i in browser.find_all("a"):
+    for i in robo_browser.find_all("a"):
         link = i.get("href").split("?")[0]
         name = i.contents
         link = link.replace("/", "")
@@ -141,9 +141,9 @@ def grab_kicktipp_groups():
     return group_names
 
 
-def grab_kicktipp_groups():
+def grab_kicktipp_groups(robo_browser):
     group_names = []
-    for i in browser.find_all("a"):
+    for i in robo_browser.find_all("a"):
         link = i.get("href").split("?")[0]
         name = i.contents
         link = link.replace("/", "")
@@ -162,9 +162,9 @@ def set_bet_urls(links):
 
 if __name__ == '__main__':
     browser = RoboBrowser(parser="html.parser", history=True)
-    login()
-    betting_url = set_bet_urls(grab_kicktipp_groups())
-    my_odds = grab_odds(betting_url)
+    login(browser)
+    betting_url = set_bet_urls(grab_kicktipp_groups(browser))
+    my_odds = grab_odds(browser, betting_url)
     my_results = calc_results(my_odds)
-    pass_results(betting_url, my_results)
+    pass_results(browser, betting_url, my_results)
     print("Done!")
