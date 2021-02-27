@@ -98,36 +98,31 @@ def calc_results(gameday):
     return results
 
 
-def get_keys(robo_browser, bet_urls):
-    ret = []
-    for url in bet_urls:
-        print("Getting input keys for " + url)
-        formkeys = []
-        robo_browser.open(url)
+def get_keys(robo_browser, url):
+    print("Getting input keys for " + url)
+    formkeys = []
+    robo_browser.open(url)
 
-        for i in robo_browser.find_all("input", inputmode="tel"):
-            formkeys.append(i.get("name"))
-        formkeys = [formkeys[i:i + 2] for i in range(0, len(formkeys), 2)]
-        ret.append(formkeys)
-    return ret
+    for i in robo_browser.find_all("input", inputmode="tel"):
+        formkeys.append(i.get("name"))
+    formkeys = [formkeys[i:i + 2] for i in range(0, len(formkeys), 2)]
+    return formkeys
 
 
 def pass_results(robo_browser, bet_urls, results):
     for idx, url in enumerate(bet_urls):
         print("Passing Results to " + url)
-        formkeys = get_keys(robo_browser, bet_urls)
+        formkeys = get_keys(robo_browser, url)
         robo_browser.open(url)
-        form = robo_browser.get_form()
 
-        # If some matches already have been played the results list needs to be adjusted
         if len(formkeys) != len(results):
-            to_delete = len(results[idx]) - len(formkeys)
-            results[idx] = results[idx][to_delete:]
+            raise ValueError
 
-        for i in range(0, len(formkeys[idx])):
-            form[formkeys[idx][i][0]] = results[idx][0]
-            form[formkeys[idx][i][1]] = results[idx][1]
-        robo_browser.submit_form(form)
+        form = robo_browser.get_form()
+        for i in range(0, len(formkeys)):
+            form[formkeys[i][0]].value = str(results[i][0])
+            form[formkeys[i][1]].value = str(results[i][1])
+        robo_browser.submit_form(form) # , submit="submitbutton")
 
 
 def grab_kicktipp_groups(robo_browser):
@@ -157,7 +152,6 @@ def set_bet_urls(links):
     for l in links:
         bet_urls.append("https://www.kicktipp.de/" + l + "/tippabgabe")
     return bet_urls
-
 
 
 if __name__ == '__main__':
