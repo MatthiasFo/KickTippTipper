@@ -122,7 +122,7 @@ def pass_results(robo_browser, bet_urls, results):
         for i in range(0, len(formkeys)):
             form[formkeys[i][0]].value = str(results[i][0])
             form[formkeys[i][1]].value = str(results[i][1])
-        robo_browser.submit_form(form) # , submit="submitbutton")
+        robo_browser.submit_form(form)
 
 
 def grab_kicktipp_groups(robo_browser):
@@ -131,20 +131,11 @@ def grab_kicktipp_groups(robo_browser):
         link = i.get("href").split("?")[0]
         name = i.contents
         link = link.replace("/", "")
-        if link in name:
+        if len(link) == 0:
+            continue
+        if link in name[0]:
             group_names.append(link)
-    return group_names
-
-
-def grab_kicktipp_groups(robo_browser):
-    group_names = []
-    for i in robo_browser.find_all("a"):
-        link = i.get("href").split("?")[0]
-        name = i.contents
-        link = link.replace("/", "")
-        if link in name:
-            group_names.append(link)
-    return group_names
+    return list(set(group_names))
 
 
 def set_bet_urls(links):
