@@ -64,10 +64,15 @@ def grab_odds(robo_browser, bet_urls):
                     odds = []
                 continue
             elif 'kicktipp-wettquote' in attributes['class']:
-                quote = float(i.get_text())
+                # due to cancelations or postponements some games don't have odds but have a matchup and tipp field
+                try:
+                    quote = float(i.get_text())
+                except ValueError:
+                    print('Was this match canceled or postponed? ' + str(matchup))
+                    quote = 2.5
                 odds.append(quote)
             elif "kicktipp-tippabgabe" in attributes['class']:
-                matchup
+                continue
             else:
                 team = i.get_text()
                 matchup.append(team)
