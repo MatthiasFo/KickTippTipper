@@ -57,7 +57,9 @@ def grab_odds(robo_browser, bet_urls):
         robo_browser.open(url)
         for i in robo_browser.find_all("td"):
             attributes = i.attrs
-            if 'kicktipp-time' in attributes['class']:
+            if len(attributes) == 0:
+                continue
+            elif 'kicktipp-time' in attributes['class']:
                 if len(matchup) > 0:
                     gameday[str(matchup)] = {'odds': odds, 'teams': matchup}
                     matchup = []
@@ -108,7 +110,7 @@ def get_keys(robo_browser, url):
     formkeys = []
     robo_browser.open(url)
 
-    for i in robo_browser.find_all("input", inputmode="tel"):
+    for i in robo_browser.find_all("input", inputmode="numeric"):
         formkeys.append(i.get("name"))
     formkeys = [formkeys[i:i + 2] for i in range(0, len(formkeys), 2)]
     return formkeys
@@ -125,8 +127,8 @@ def pass_results(robo_browser, bet_urls, results):
 
         form = robo_browser.get_form()
         for i in range(0, len(formkeys)):
-            form[formkeys[i][0]].value = str(results[i][0])
-            form[formkeys[i][1]].value = str(results[i][1])
+            form[formkeys[i][0]].value = str(int(results[i][0]))
+            form[formkeys[i][1]].value = str(int(results[i][1]))
         robo_browser.submit_form(form)
 
 
